@@ -1,0 +1,98 @@
+"""The `File` scalar type represents a file upload."""
+scalar File
+
+scalar Map
+
+type Move {
+  accuracy: Int
+  name: String!
+  power: Int
+  pp: Int!
+  type: Type!
+}
+
+type Mutation {
+  toggleFavorite(id: Int!): ToggleFavoriteOutput
+}
+
+type PageInfo {
+  endCursor: String
+  hasNextPage: Boolean!
+  hasPreviousPage: Boolean!
+  startCursor: String
+}
+
+type Query {
+  favorites: [Species!]!
+  pokemon(after: String, before: String, first: Int, last: Int): SpeciesConnection!
+  species(id: Int!): Species
+}
+
+type Species {
+  evolutionChain: [Species!]!
+  favorite: Boolean!
+  flavorText: String!
+  id: Int!
+  moves(after: String, before: String, first: Int, last: Int): SpeciesMoveConnection!
+  name: String!
+  sprites: SpeciesSprites!
+  types: [Type!]!
+}
+
+type SpeciesConnection {
+  edges: [SpeciesEdge!]!
+  pageInfo: PageInfo!
+  totalCount: Int!
+}
+
+type SpeciesEdge {
+  cursor: String!
+  node: Species!
+}
+
+type SpeciesMove {
+  learnedAt: Int!
+  method: String!
+  move: Move!
+}
+
+type SpeciesMoveConnection {
+  edges: [SpeciesMoveEdge!]!
+  pageInfo: PageInfo!
+  totalCount: Int!
+}
+
+type SpeciesMoveEdge {
+  cursor: String!
+  node: SpeciesMove!
+}
+
+type SpeciesSprites {
+  back: String!
+  front: String!
+}
+
+type ToggleFavoriteOutput {
+  species: Species
+}
+
+enum Type {
+  Bug
+  Dark
+  Dragon
+  Electric
+  Fairy
+  Fighting
+  Fire
+  Flying
+  Ghost
+  Grass
+  Ground
+  Ice
+  Normal
+  Poison
+  Psychic
+  Rock
+  Steel
+  Water
+}
