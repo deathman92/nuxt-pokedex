@@ -6,7 +6,13 @@ export default defineNuxtConfig({
   css: ["~/assets/styles/colors.css", "~/assets/styles/elements.css"],
   app: {
     head: {
+      htmlAttrs: {
+        lang: "en",
+      },
       title: "Urql • Nuxt • Pokédex",
+      meta: [
+        { name: "description", content: "Explore Pokemons with Urql and Nuxt" },
+      ],
       // link: [
       //   { href: 'https://fonts.googleapis.com', rel: 'preconnect' },
       //   {

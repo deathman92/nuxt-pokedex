@@ -1,37 +1,37 @@
 <script setup lang="ts">
 definePageMeta({
   validate: async (route) => {
-    const params = route.params as { id: string }
+    const params = route.params as { id: string };
     // Check if the id is made up of digits
-    return typeof params.id === 'string' && /^\d+$/.test(params.id)
+    return typeof params.id === "string" && /^\d+$/.test(params.id);
   },
   middleware: (to) => {
-    const params = to.params as { id: string }
+    const params = to.params as { id: string };
 
     if (params.id === null || params.id === undefined) {
-      return
+      return;
     }
 
-    const id = parseInt(params.id, 10)
+    const id = parseInt(params.id, 10);
     if (id <= 0 || id >= 152) {
       abortNavigation({
         statusCode: 400,
-        statusMessage: 'id must be between 1 and 151',
-      })
+        statusMessage: "id must be between 1 and 151",
+      });
     }
   },
-})
+});
 
-const id = useRouteParams('id', undefined, {
+const id = useRouteParams("id", undefined, {
   transform(val) {
-    if (val) return Number(val)
+    if (val) return Number(val);
   },
-})
+});
 
-const first = ref<number | undefined>(1)
-const last = ref<number | undefined>()
-const after = ref<string | null>()
-const before = ref<string | null>()
+const first = ref<number | undefined>(1);
+const last = ref<number | undefined>();
+const after = ref<string | null>();
+const before = ref<string | null>();
 
 const query = graphql(`
   query Info(
@@ -75,27 +75,27 @@ const query = graphql(`
       ...FavoritePreview
     }
   }
-`)
+`);
 const { data } = await useQuery({
   query,
   variables: { id, first, last, after, before },
-})
+});
 
 const loadPreviousPage = () => {
-  last.value = 1
-  before.value = data.value?.species?.moves.pageInfo.startCursor
+  last.value = 1;
+  before.value = data.value?.species?.moves.pageInfo.startCursor;
 
-  first.value = undefined
-  after.value = undefined
-}
+  first.value = undefined;
+  after.value = undefined;
+};
 
 const loadNextPage = () => {
-  first.value = 1
-  after.value = data.value?.species?.moves.pageInfo.endCursor
+  first.value = 1;
+  after.value = data.value?.species?.moves.pageInfo.endCursor;
 
-  last.value = undefined
-  before.value = undefined
-}
+  last.value = undefined;
+  before.value = undefined;
+};
 
 const { executeMutation: toggleFavorite } = useMutation(
   graphql(`
@@ -107,8 +107,8 @@ const { executeMutation: toggleFavorite } = useMutation(
         }
       }
     }
-  `),
-)
+  `)
+);
 </script>
 
 <template>
@@ -127,7 +127,11 @@ const { executeMutation: toggleFavorite } = useMutation(
   <Container v-else>
     <template #left>
       <Panel>
-        <button id="favorite" @click="toggleFavorite({ id: data.species.id })">
+        <button
+          id="favorite"
+          @click="toggleFavorite({ id: data.species.id })"
+          name="favorite"
+        >
           <IconStar
             id="favorite-star"
             :fill="data.species.favorite ? 'gold' : 'lightgrey'"
@@ -177,10 +181,12 @@ const { executeMutation: toggleFavorite } = useMutation(
             <UpButton
               :disabled="!data.species.moves.pageInfo.hasPreviousPage"
               @click="loadPreviousPage"
+              name="previous"
             />
             <DownButton
               :disabled="!data.species.moves.pageInfo.hasNextPage"
               @click="loadNextPage"
+              name="next"
             />
           </div>
         </div>
