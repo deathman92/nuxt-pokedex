@@ -6,25 +6,10 @@ export default defineNuxtConfig({
   css: ["~/assets/styles/colors.css", "~/assets/styles/elements.css"],
   app: {
     head: {
-      htmlAttrs: {
-        lang: "en",
-      },
       title: "Urql • Nuxt • Pokédex",
       meta: [
         { name: "description", content: "Explore Pokemons with Urql and Nuxt" },
       ],
-      // link: [
-      //   { href: 'https://fonts.googleapis.com', rel: 'preconnect' },
-      //   {
-      //     href: 'https://fonts.gstatic.com',
-      //     rel: 'preconnect',
-      //     crossorigin: '',
-      //   },
-      //   {
-      //     href: 'https://fonts.googleapis.com/css2?family=Staatliches&family=VT323&display=swap',
-      //     rel: 'stylesheet',
-      //   },
-      // ],
     },
   },
   imports: {
@@ -39,14 +24,6 @@ export default defineNuxtConfig({
   experimental: {
     typedPages: true,
   },
-  nitro: {
-    imports: {
-      dirs: ["src/server/graphql"],
-    },
-  },
-  routeRules: {
-    "/": { redirect: "/1" },
-  },
   modules: [
     "@nuxt/image",
     "@nuxt/fonts",
@@ -57,17 +34,38 @@ export default defineNuxtConfig({
   ],
   urql: {
     endpoint: "/api/graphql",
+    ssr: {
+      key: "__URQL_DATA__",
+      staleWhileRevalidate: true,
+    },
   },
   lucide: {
     namePrefix: "Icon",
   },
   image: {
     domains: ["raw.githubusercontent.com"],
-    quality: 70,
   },
   fonts: {
     defaults: {
       preload: true,
     },
+  },
+  nitro: {
+    compressPublicAssets: true,
+    imports: {
+      dirs: ["src/server/graphql"],
+    },
+  },
+  routeRules: {
+    "/": { redirect: "/1" },
+    ...Array.from({ length: 151 })
+      .map((_, i) => i)
+      .reduce(
+        (rules, i) => ({
+          ...rules,
+          [`/${i + 1}`]: { prerender: true },
+        }),
+        {}
+      ),
   },
 });

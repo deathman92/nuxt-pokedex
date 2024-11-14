@@ -1,18 +1,14 @@
 <script setup lang="ts">
 definePageMeta({
   validate: async (route) => {
-    const params = route.params as { id: string };
+    if (route.name !== "id") return false;
     // Check if the id is made up of digits
-    return typeof params.id === "string" && /^\d+$/.test(params.id);
+    return typeof route.params.id === "string" && /^\d+$/.test(route.params.id);
   },
   middleware: (to) => {
-    const params = to.params as { id: string };
+    if (to.name !== "id") return;
 
-    if (params.id === null || params.id === undefined) {
-      return;
-    }
-
-    const id = parseInt(params.id, 10);
+    const id = parseInt(to.params.id, 10);
     if (id <= 0 || id >= 152) {
       abortNavigation({
         statusCode: 400,
@@ -22,63 +18,70 @@ definePageMeta({
   },
 });
 
-const id = useRouteParams("id", undefined, {
-  transform(val) {
-    if (val) return Number(val);
-  },
-});
+const route = useRoute("id");
+
+const id = computed(() => Number(route.params.id));
 
 const first = ref<number | undefined>(1);
 const last = ref<number | undefined>();
 const after = ref<string | null>();
 const before = ref<string | null>();
 
-const query = graphql(`
-  query Info(
-    $id: Int! = 1
-    $first: Int
-    $last: Int
-    $after: String
-    $before: String
-  ) {
-    species(id: $id) {
-      id
-      name
-      flavorText
-      favorite
-      evolutionChain {
+const { data, stale, error } = await useQuery({
+  query: graphql(`
+    query Info(
+      $id: Int! = 1
+      $first: Int
+      $last: Int
+      $after: String
+      $before: String
+    ) {
+      species(id: $id) {
         id
-        ...SpeciesPreview
-      }
-      ...SpriteInfo
+        name
+        flavorText
+        favorite
+        evolutionChain {
+          id
+          ...SpeciesPreview
+        }
+        ...SpriteInfo
 
-      moves(first: $first, last: $last, after: $after, before: $before) {
-        edges {
-          cursor
-          node {
-            move {
-              name
+        moves(first: $first, last: $last, after: $after, before: $before) {
+          edges {
+            cursor
+            node {
+              move {
+                name
+              }
+              ...MoveDisplay
             }
-            ...MoveDisplay
+          }
+          pageInfo {
+            hasPreviousPage
+            hasNextPage
+            startCursor
+            endCursor
           }
         }
-        pageInfo {
-          hasPreviousPage
-          hasNextPage
-          startCursor
-          endCursor
-        }
+      }
+      favorites {
+        id
+        ...FavoritePreview
       }
     }
-    favorites {
-      id
-      ...FavoritePreview
-    }
-  }
-`);
-const { data } = await useQuery({
-  query,
+  `),
   variables: { id, first, last, after, before },
+});
+
+const loader = useLoadingIndicator();
+
+watch(stale, (value) => {
+  if (value) {
+    loader.start();
+  } else {
+    loader.finish({ error: !!error.value });
+  }
 });
 
 const loadPreviousPage = () => {
@@ -97,7 +100,11 @@ const loadNextPage = () => {
   before.value = undefined;
 };
 
-const { executeMutation: toggleFavorite } = useMutation(
+const {
+  executeMutation: toggleFavorite,
+  fetching,
+  error: toggleFavoriteError,
+} = useMutation(
   graphql(`
     mutation ToggleFavorite($id: Int!) {
       toggleFavorite(id: $id) {
@@ -109,18 +116,28 @@ const { executeMutation: toggleFavorite } = useMutation(
     }
   `)
 );
+
+watch(fetching, (value) => {
+  if (value) {
+    loader.start();
+  } else {
+    loader.finish({ error: !!toggleFavoriteError.value });
+  }
+});
 </script>
 
 <template>
   <FavoritesContainer>
-    <template v-if="data?.favorites.length">
-      <FavoritePreview
-        v-for="favorite of data.favorites"
-        :key="favorite.id"
-        :species="favorite"
-      />
-    </template>
-    <p v-else>No Favorites Selected</p>
+    <ClientOnly>
+      <template v-if="data?.favorites.length">
+        <FavoritePreview
+          v-for="favorite of data.favorites"
+          :key="favorite.id"
+          :species="favorite"
+        />
+      </template>
+      <p v-else>No Favorites Selected</p>
+    </ClientOnly>
   </FavoritesContainer>
 
   <Container v-if="!data?.species" />
@@ -130,7 +147,7 @@ const { executeMutation: toggleFavorite } = useMutation(
         <button
           id="favorite"
           @click="toggleFavorite({ id: data.species.id })"
-          name="favorite"
+          aria-label="Toggle Favorite"
         >
           <IconStar
             id="favorite-star"
@@ -173,38 +190,34 @@ const { executeMutation: toggleFavorite } = useMutation(
         </div>
 
         <div id="move-summary">
-          <MoveDisplay
-            :move="data.species.moves.edges[0].node"
-            :key="data.species.moves.edges[0].node.move.name"
-          />
-          <div id="move-controls">
-            <UpButton
-              :disabled="!data.species.moves.pageInfo.hasPreviousPage"
-              @click="loadPreviousPage"
-              name="previous"
+          <template v-if="data.species.moves.edges">
+            <MoveDisplay
+              :move="data.species.moves.edges[0].node"
+              :key="data.species.moves.edges[0].node.move.name"
             />
-            <DownButton
-              :disabled="!data.species.moves.pageInfo.hasNextPage"
-              @click="loadNextPage"
-              name="next"
-            />
-          </div>
+            <div id="move-controls">
+              <UpButton
+                :disabled="!data.species.moves.pageInfo.hasPreviousPage"
+                @click="loadPreviousPage"
+              />
+              <DownButton
+                :disabled="!data.species.moves.pageInfo.hasNextPage"
+                @click="loadNextPage"
+              />
+            </div>
+          </template>
         </div>
 
         <nav>
           <NuxtLink
             :to="{ params: { id: data.species.id - 1 } }"
             :data-disabled="data.species.id <= 1"
-            prefetch
-            prefetch-on="interaction"
           >
             previous
           </NuxtLink>
           <NuxtLink
             :to="{ params: { id: data.species.id + 1 } }"
             :data-disabled="data.species.id >= 151"
-            prefetch
-            prefetch-on="interaction"
           >
             next
           </NuxtLink>

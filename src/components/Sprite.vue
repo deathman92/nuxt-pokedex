@@ -24,6 +24,7 @@ const info = useFragment(SpriteInfo, species);
       :alt="`${info.name} sprite`"
       :height="height"
       :width="width"
+      placeholder
       preload
     />
   </div>

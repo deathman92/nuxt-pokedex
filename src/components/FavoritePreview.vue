@@ -7,13 +7,13 @@ const FavoritePreview = graphql(`
       front
     }
   }
-`)
+`);
 
 const { species } = defineProps<{
-  species: FragmentType<typeof FavoritePreview>
-}>()
+  species: FragmentType<typeof FavoritePreview>;
+}>();
 
-const preview = useFragment(FavoritePreview, species)
+const preview = useFragment(FavoritePreview, species);
 </script>
 
 <template>
@@ -23,6 +23,8 @@ const preview = useFragment(FavoritePreview, species)
       :alt="`${preview.name} sprite`"
       height="96"
       width="96"
+      placeholder
+      preload
     />
   </NuxtLink>
 </template>
